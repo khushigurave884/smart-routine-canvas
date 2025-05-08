@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Task } from "@/lib/types";
 import { format } from "date-fns";
-import { CalendarIcon, Calendar, ListCheck } from "lucide-react";
+import { CalendarIcon, ListCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -22,11 +22,11 @@ import CalendarStatus from "./CalendarStatus";
 const getPriorityColor = (priority: string) => {
   switch (priority) {
     case "high":
-      return "bg-priority-high text-white";
+      return "bg-priority-high text-white dark:bg-red-700";
     case "medium":
-      return "bg-priority-medium text-white";
+      return "bg-priority-medium text-white dark:bg-amber-600";
     case "low":
-      return "bg-priority-low text-white";
+      return "bg-priority-low text-white dark:bg-green-700";
     default:
       return "bg-gray-500 text-white";
   }

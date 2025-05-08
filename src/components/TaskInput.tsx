@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useTask } from "@/context/TaskContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { Category, Priority } from "@/lib/types";
@@ -26,31 +26,91 @@ import { toast } from "sonner";
 
 const TaskInput: React.FC = () => {
   const { addTask } = useTask();
-  const { content } = useLanguage();
+  const { content, language } = useLanguage();
   const [taskContent, setTaskContent] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
   const [category, setCategory] = useState<Category>("work");
   const [deadline, setDeadline] = useState<Date | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   
-  // In a real app, this would use the Web Speech API
+  // Reference to Speech Recognition API
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    // Check if browser supports SpeechRecognition
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      
+      // Configure recognition
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      
+      // Set language based on current app language
+      const speechLanguage = language === 'es' ? 'es-ES' : 
+                            language === 'hi' ? 'hi-IN' : 'en-US';
+      recognitionRef.current.lang = speechLanguage;
+      
+      // Set up event handlers
+      recognitionRef.current.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map(result => result[0])
+          .map(result => result.transcript)
+          .join('');
+          
+        setTaskContent(transcript);
+      };
+      
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error', event.error);
+        setIsRecording(false);
+        toast.error("Voice input error: " + event.error);
+      };
+      
+      recognitionRef.current.onend = () => {
+        setIsRecording(false);
+      };
+    }
+    
+    // Clean up
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.onerror = null;
+        if (isRecording) {
+          recognitionRef.current.stop();
+        }
+      }
+    };
+  }, [language]);
+
+  // Update language when app language changes
+  useEffect(() => {
+    if (recognitionRef.current) {
+      const speechLanguage = language === 'es' ? 'es-ES' : 
+                            language === 'hi' ? 'hi-IN' : 'en-US';
+      recognitionRef.current.lang = speechLanguage;
+    }
+  }, [language]);
+
   const toggleVoiceInput = () => {
+    if (!recognitionRef.current) {
+      toast.error("Speech recognition is not supported in this browser.");
+      return;
+    }
+    
     if (!isRecording) {
       // Start recording
+      recognitionRef.current.start();
       setIsRecording(true);
-      toast.info("Voice recording started. Speak now...");
-      // Simulate voice recognition after 3 seconds
-      setTimeout(() => {
-        setTaskContent((prev) => 
-          prev + (prev ? " " : "") + "Voice recorded task example"
-        );
-        setIsRecording(false);
-        toast.success("Voice input captured!");
-      }, 3000);
+      toast.info(content.startVoiceInput);
     } else {
       // Stop recording
+      recognitionRef.current.stop();
       setIsRecording(false);
-      toast.info("Voice recording stopped");
+      toast.info(content.stopVoiceInput);
     }
   };
 
@@ -68,7 +128,7 @@ const TaskInput: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-white rounded-lg shadow-sm">
+    <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-background rounded-lg shadow-sm border border-border">
       <div className="flex items-center gap-2">
         <div className="flex-1">
           <Input
@@ -84,7 +144,7 @@ const TaskInput: React.FC = () => {
           variant="outline"
           size="icon"
           onClick={toggleVoiceInput}
-          className={isRecording ? "bg-red-100 border-red-300" : ""}
+          className={isRecording ? "bg-red-100 border-red-300 dark:bg-red-900 dark:border-red-700" : ""}
         >
           {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
         </Button>
@@ -158,5 +218,13 @@ const TaskInput: React.FC = () => {
     </form>
   );
 };
+
+// Add SpeechRecognition types for TypeScript
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition;
+    webkitSpeechRecognition: typeof SpeechRecognition;
+  }
+}
 
 export default TaskInput;

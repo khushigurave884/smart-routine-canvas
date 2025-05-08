@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { LanguageContent, SupportedLanguage } from "@/lib/types";
 
@@ -25,13 +24,15 @@ const englishContent: LanguageContent = {
   switchLanguage: "Switch language",
   emptyTaskList: "No tasks yet. Add some tasks to get started!",
   timeToBreak: "Time to take a break!",
+  toggleTheme: "Toggle theme",
   languages: {
     en: "English",
     es: "Spanish",
     fr: "French",
     de: "German",
     zh: "Chinese",
-    ja: "Japanese"
+    ja: "Japanese",
+    hi: "Hindi"
   },
   priorities: {
     low: "Low",
@@ -72,27 +73,64 @@ const spanishContent: LanguageContent = {
   switchLanguage: "Cambiar idioma",
   emptyTaskList: "No hay tareas todavía. ¡Añade algunas para empezar!",
   timeToBreak: "¡Es hora de tomar un descanso!",
+  toggleTheme: "Cambiar tema",
   languages: {
     en: "Inglés",
     es: "Español",
     fr: "Francés",
     de: "Alemán",
     zh: "Chino",
-    ja: "Japonés"
+    ja: "Japonés",
+    hi: "Hindi"
+  },
+};
+
+// Add Hindi language content
+const hindiContent: LanguageContent = {
+  appName: "दैनिक कार्य से स्मार्ट नोट्स कनवर्टर",
+  addTask: "नया कार्य जोड़ें",
+  taskPlaceholder: "आपको क्या करने की आवश्यकता है?",
+  startVoiceInput: "आवाज़ इनपुट शुरू करें",
+  stopVoiceInput: "आवाज़ इनपुट बंद करें",
+  priority: "प्राथमिकता",
+  category: "श्रेणी",
+  deadline: "समय सीमा",
+  noPrioritySet: "कोई प्राथमिकता नहीं",
+  noCategorySet: "कोई श्रेणी नहीं",
+  noDeadlineSet: "कोई समय सीमा नहीं",
+  export: "निर्यात करें",
+  exportToPDF: "PDF में निर्यात करें",
+  exportToJSON: "JSON में निर्यात करें",
+  syncWithCalendar: "कैलेंडर से सिंक करें",
+  synced: "सिंक्रनाइज़ किया गया",
+  notSynced: "सिंक्रनाइज़ नहीं किया गया",
+  breakSuggestion: "ब्रेक का समय! 5 मिनट की वॉक लें।",
+  switchLanguage: "भाषा बदलें",
+  emptyTaskList: "अभी तक कोई कार्य नहीं है। शुरू करने के लिए कुछ कार्य जोड़ें!",
+  timeToBreak: "ब्रेक लेने का समय है!",
+  toggleTheme: "थीम बदलें",
+  languages: {
+    en: "अंग्रेज़ी",
+    es: "स्पैनिश",
+    fr: "फ्रेंच",
+    de: "जर्मन",
+    zh: "चीनी",
+    ja: "जापानी",
+    hi: "हिंदी"
   },
   priorities: {
-    low: "Baja",
-    medium: "Media",
-    high: "Alta"
+    low: "कम",
+    medium: "मध्यम",
+    high: "उच्च"
   },
   categories: {
-    work: "Trabajo",
-    personal: "Personal",
-    health: "Salud",
-    finance: "Finanzas",
-    education: "Educación",
-    social: "Social",
-    other: "Otro"
+    work: "कार्य",
+    personal: "व्यक्तिगत",
+    health: "स्वास्थ्य",
+    finance: "वित्त",
+    education: "शिक्षा",
+    social: "सामाजिक",
+    other: "अन्य"
   }
 };
 
@@ -103,7 +141,8 @@ const languageContents: Record<SupportedLanguage, LanguageContent> = {
   fr: englishContent, // Would be replaced with actual French content
   de: englishContent, // Would be replaced with actual German content
   zh: englishContent, // Would be replaced with actual Chinese content
-  ja: englishContent  // Would be replaced with actual Japanese content
+  ja: englishContent, // Would be replaced with actual Japanese content
+  hi: hindiContent
 };
 
 interface LanguageContextType {

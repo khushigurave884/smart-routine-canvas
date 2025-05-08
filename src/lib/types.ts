@@ -20,7 +20,7 @@ export interface Task {
   syncedWithCalendar: boolean;
 }
 
-export type SupportedLanguage = "en" | "es" | "fr" | "de" | "zh" | "ja";
+export type SupportedLanguage = "en" | "es" | "fr" | "de" | "zh" | "ja" | "hi";
 
 export interface LanguageContent {
   appName: string;
@@ -44,6 +44,7 @@ export interface LanguageContent {
   switchLanguage: string;
   emptyTaskList: string;
   timeToBreak: string;
+  toggleTheme: string;
   languages: {
     en: string;
     es: string;
@@ -51,6 +52,7 @@ export interface LanguageContent {
     de: string;
     zh: string;
     ja: string;
+    hi: string;
   };
   priorities: {
     low: string;
