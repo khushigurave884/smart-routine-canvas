@@ -83,6 +83,20 @@ const spanishContent: LanguageContent = {
     ja: "Japonés",
     hi: "Hindi"
   },
+  priorities: {
+    low: "Baja",
+    medium: "Media",
+    high: "Alta"
+  },
+  categories: {
+    work: "Trabajo",
+    personal: "Personal",
+    health: "Salud",
+    finance: "Finanzas",
+    education: "Educación",
+    social: "Social",
+    other: "Otro"
+  }
 };
 
 // Add Hindi language content
@@ -102,7 +116,7 @@ const hindiContent: LanguageContent = {
   exportToPDF: "PDF में निर्यात करें",
   exportToJSON: "JSON में निर्यात करें",
   syncWithCalendar: "कैलेंडर से सिंक करें",
-  synced: "सिंक्रनाइज़ किया गया",
+  synced: "सिंक्रनाइज�� किया गया",
   notSynced: "सिंक्रनाइज़ नहीं किया गया",
   breakSuggestion: "ब्रेक का समय! 5 मिनट की वॉक लें।",
   switchLanguage: "भाषा बदलें",

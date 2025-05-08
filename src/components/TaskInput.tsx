@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { useTask } from "@/context/TaskContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -24,6 +23,32 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, Mic, MicOff } from "lucide-react";
 import { toast } from "sonner";
 
+// Define SpeechRecognition types
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionError extends Event {
+  error: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionError) => any) | null;
+  start(): void;
+  stop(): void;
+}
+
+// Define the SpeechRecognition constructor
+interface SpeechRecognitionConstructor {
+  new(): SpeechRecognition;
+  prototype: SpeechRecognition;
+}
+
 const TaskInput: React.FC = () => {
   const { addTask } = useTask();
   const { content, language } = useLanguage();
@@ -40,7 +65,7 @@ const TaskInput: React.FC = () => {
   useEffect(() => {
     // Check if browser supports SpeechRecognition
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const SpeechRecognition = (window.SpeechRecognition || window.webkitSpeechRecognition) as SpeechRecognitionConstructor;
       recognitionRef.current = new SpeechRecognition();
       
       // Configure recognition
@@ -222,8 +247,8 @@ const TaskInput: React.FC = () => {
 // Add SpeechRecognition types for TypeScript
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
+    SpeechRecognition: SpeechRecognitionConstructor;
+    webkitSpeechRecognition: SpeechRecognitionConstructor;
   }
 }
 
