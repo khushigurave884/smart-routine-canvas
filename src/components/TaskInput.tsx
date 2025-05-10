@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, Mic, MicOff } from "lucide-react";
+import { CalendarIcon, Mic, MicOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 // Define SpeechRecognition types
@@ -57,6 +57,9 @@ const TaskInput: React.FC = () => {
   const [category, setCategory] = useState<Category>("work");
   const [deadline, setDeadline] = useState<Date | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [isAnalyzingPriority, setIsAnalyzingPriority] = useState(false);
+  const [priorityExplanation, setPriorityExplanation] = useState<string | null>(null);
+  const [useAIPriority, setUseAIPriority] = useState(true);
   
   // Reference to Speech Recognition API
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -120,6 +123,55 @@ const TaskInput: React.FC = () => {
     }
   }, [language]);
 
+  // Determine priority using AI when task content changes
+  useEffect(() => {
+    // Only attempt to determine priority if:
+    // 1. Task content is not empty
+    // 2. AI priority is enabled
+    // 3. Not already analyzing priority
+    if (taskContent.trim() && useAIPriority && !isAnalyzingPriority) {
+      const determinePriority = async () => {
+        // Debounce - only analyze after user stops typing for 1 second
+        const timeoutId = setTimeout(async () => {
+          setIsAnalyzingPriority(true);
+          try {
+            const response = await fetch("http://127.0.0.1:5000/api/determine-priority", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ 
+                taskContent,
+                language 
+              }),
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              setPriority(data.priority as Priority);
+              setPriorityExplanation(data.explanation || null);
+            } else {
+              console.error("Error determining priority:", await response.text());
+              setPriorityExplanation(null);
+            }
+          } catch (error) {
+            console.error("Error determining priority:", error);
+            setPriorityExplanation(null);
+          } finally {
+            setIsAnalyzingPriority(false);
+          }
+        }, 1000); // 1-second debounce
+        
+        return () => clearTimeout(timeoutId);
+      };
+      
+      determinePriority();
+    } else if (!taskContent.trim()) {
+      // Reset explanation when task content is empty
+      setPriorityExplanation(null);
+    }
+  }, [taskContent, language, useAIPriority]);
+
   const toggleVoiceInput = () => {
     if (!recognitionRef.current) {
       toast.error("Speech recognition is not supported in this browser.");
@@ -148,6 +200,7 @@ const TaskInput: React.FC = () => {
     addTask(taskContent.trim(), priority, category, deadline);
     setTaskContent("");
     setPriority("medium");
+    setPriorityExplanation(null);
     setCategory("work");
     setDeadline(null);
   };
@@ -177,9 +230,32 @@ const TaskInput: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="priority">{content.priority}</Label>
-          <Select value={priority} onValueChange={(value) => setPriority(value as Priority)}>
-            <SelectTrigger id="priority">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="priority">{content.priority}</Label>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="use-ai-priority"
+                checked={useAIPriority}
+                onChange={(e) => setUseAIPriority(e.target.checked)}
+                className="mr-2"
+              />
+              <label htmlFor="use-ai-priority" className="text-xs text-muted-foreground">
+                {content.useAI || "Use AI"}
+              </label>
+            </div>
+          </div>
+          <Select 
+            value={priority} 
+            onValueChange={(value) => setPriority(value as Priority)}
+            disabled={useAIPriority && isAnalyzingPriority}
+          >
+            <SelectTrigger id="priority" className="relative">
+              {isAnalyzingPriority && useAIPriority && (
+                <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-md">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              )}
               <SelectValue placeholder={content.noPrioritySet} />
             </SelectTrigger>
             <SelectContent>
@@ -188,6 +264,9 @@ const TaskInput: React.FC = () => {
               <SelectItem value="high">{content.priorities.high}</SelectItem>
             </SelectContent>
           </Select>
+          {priorityExplanation && (
+            <p className="text-xs text-muted-foreground mt-1">{priorityExplanation}</p>
+          )}
         </div>
 
         <div className="space-y-2">

@@ -55,61 +55,78 @@ model = genai.GenerativeModel(
 
 @app.route('/api/quote', methods=['POST'])
 def get_quote():
-    data = request.json
-    language_code = data.get('language', 'en')
-    
-    prompt_by_language = {
-        'en': "Generate a short motivational quote (less than 15 words) for productivity.",
-        'es': "Genera una breve cita motivacional (menos de 15 palabras) para la productividad.",
-        'hi': "उत्पादकता के लिए एक छोटा प्रेरक उद्धरण (15 शब्दों से कम) उत्पन्न करें।",
-        # Add other languages as needed
-    }
-    
-    prompt = prompt_by_language.get(language_code, prompt_by_language['en'])
-    
-    try:
-        response = model.generate_content(prompt)
-        quote = response.text.strip('"').strip()
-        
-        # Remove excess formatting like markdown or newlines
-        quote = quote.replace('*', '').replace('#', '').strip()
-        
-        return jsonify({"quote": quote})
-    except Exception as e:
-        print(f"Error generating quote: {e}")
-        return jsonify({
-            "quote": "Every moment is a fresh beginning.",
-            "error": str(e)
-        }), 500
+    # ... keep existing code (quote generation)
 
 @app.route('/api/break-suggestion', methods=['POST'])
 def get_break_suggestion():
+    # ... keep existing code (break suggestion)
+
+@app.route('/api/determine-priority', methods=['POST'])
+def determine_priority():
     data = request.json
+    task_content = data.get('taskContent', '')
     language_code = data.get('language', 'en')
     
+    if not task_content:
+        return jsonify({
+            "priority": "medium",
+            "explanation": "No task content provided. Default priority assigned."
+        })
+    
     prompt_by_language = {
-        'en': "Generate a brief productivity break suggestion.",
-        'es': "Genera una breve sugerencia de descanso para la productividad.",
-        'hi': "उत्पादकता विराम के लिए एक संक्षिप्त सुझाव उत्पन्न करें।",
-        # Add other languages as needed
+        'en': f"Given the task: '{task_content}', determine its priority as 'low', 'medium', or 'high'. Consider task urgency, importance, and complexity. Respond with just a JSON object with two fields: 'priority' which is one of: 'low', 'medium', or 'high', and 'explanation' which is a short explanation of why you chose that priority.",
+        'es': f"Dada la tarea: '{task_content}', determina su prioridad como 'baja', 'media', o 'alta'. Considera la urgencia, importancia y complejidad de la tarea. Responde con un objeto JSON con dos campos: 'priority' que es uno de: 'low', 'medium', o 'high', y 'explanation' que es una breve explicación de por qué elegiste esa prioridad.",
+        'hi': f"कार्य के आधार पर: '{task_content}', इसकी प्राथमिकता 'निम्न', 'मध्यम', या 'उच्च' के रूप में निर्धारित करें। कार्य की तात्कालिकता, महत्व और जटिलता पर विचार करें। केवल एक JSON ऑब्जेक्ट के साथ उत्तर दें जिसमें दो फील्ड हों: 'priority' जो इनमें से एक है: 'low', 'medium', या 'high', और 'explanation' जो एक संक्षिप्त स्पष्टीकरण है कि आपने वह प्राथमिकता क्यों चुनी।"
     }
     
     prompt = prompt_by_language.get(language_code, prompt_by_language['en'])
     
     try:
         response = model.generate_content(prompt)
-        suggestion = response.text.strip('"').strip()
+        response_text = response.text.strip()
         
-        # Remove excess formatting
-        suggestion = suggestion.replace('*', '').replace('#', '').strip()
+        # Try to extract the JSON part if it's wrapped in ``` or other markers
+        import json
+        import re
         
-        return jsonify({"suggestion": suggestion})
-    except Exception as e:
-        print(f"Error generating break suggestion: {e}")
+        # Find JSON-like structures in the response
+        json_match = re.search(r'\{.*?\}', response_text, re.DOTALL)
+        if json_match:
+            try:
+                result = json.loads(json_match.group(0))
+                # Ensure the result contains valid priority
+                if "priority" in result and result["priority"] in ["low", "medium", "high"]:
+                    return jsonify(result)
+            except json.JSONDecodeError:
+                pass
+                
+        # If we can't parse JSON or the priority is invalid, fall back to a simpler approach
+        priority_mapping = {
+            "low": ["low", "baja", "निम्न"],
+            "medium": ["medium", "media", "मध्यम"],
+            "high": ["high", "alta", "उच्च"]
+        }
+        
+        for priority, keywords in priority_mapping.items():
+            if any(keyword in response_text.lower() for keyword in keywords):
+                return jsonify({
+                    "priority": priority,
+                    "explanation": "Based on AI analysis of the task content."
+                })
+        
+        # Default fallback
         return jsonify({
-            "suggestion": "Take a 5-minute walk to refresh your mind.",
+            "priority": "medium",
+            "explanation": "AI couldn't determine priority clearly. Medium priority assigned by default."
+        })
+        
+    except Exception as e:
+        print(f"Error determining priority: {e}")
+        return jsonify({
+            "priority": "medium",
+            "explanation": "Error in AI processing. Default priority assigned.",
             "error": str(e)
-        }), 500
+        })
 
 if __name__ == '__main__':
     app.run(debug=True)
