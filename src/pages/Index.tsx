@@ -10,22 +10,52 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import { TaskProvider } from "@/context/TaskContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Clock } from "lucide-react";
+import { Clock, Loader2 } from "lucide-react";
 
 const BreakSuggestion: React.FC = () => {
-  const { content } = useLanguage();
+  const { content, language } = useLanguage();
   const [showBreak, setShowBreak] = useState(false);
+  const [suggestion, setSuggestion] = useState<string>(content.breakSuggestion);
+  const [loading, setLoading] = useState(false);
+  
+  const fetchBreakSuggestion = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("http://127.0.0.1:5000/api/break-suggestion", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ language }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestion(data.suggestion);
+      } else {
+        // Fallback to default suggestion
+        setSuggestion(content.breakSuggestion);
+      }
+    } catch (error) {
+      console.error("Error fetching break suggestion:", error);
+      setSuggestion(content.breakSuggestion);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   // Show break suggestion every 30 minutes
   useEffect(() => {
     const interval = setInterval(() => {
       setShowBreak(true);
+      fetchBreakSuggestion();
       setTimeout(() => setShowBreak(false), 30000); // Hide after 30 seconds
     }, 1800000); // 30 minutes
     
     // For demo purposes, show it after 15 seconds initially
     const initialTimer = setTimeout(() => {
       setShowBreak(true);
+      fetchBreakSuggestion();
       setTimeout(() => setShowBreak(false), 30000);
     }, 15000);
     
@@ -33,7 +63,7 @@ const BreakSuggestion: React.FC = () => {
       clearInterval(interval);
       clearTimeout(initialTimer);
     };
-  }, []);
+  }, [language]);
   
   if (!showBreak) return null;
   
@@ -41,7 +71,16 @@ const BreakSuggestion: React.FC = () => {
     <Alert className="bg-accent/20 border-accent mb-4 animate-fade-in">
       <Clock className="h-4 w-4" />
       <AlertTitle>{content.timeToBreak}</AlertTitle>
-      <AlertDescription>{content.breakSuggestion}</AlertDescription>
+      <AlertDescription>
+        {loading ? (
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Loading suggestion...</span>
+          </div>
+        ) : (
+          suggestion
+        )}
+      </AlertDescription>
     </Alert>
   );
 };
